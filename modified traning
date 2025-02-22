@@ -75,3 +75,64 @@ except Exception as e:
 finally:
     cap.release()
     cv2.destroyAllWindows()
+
+
+
+
+
+
+
+
+
+
+import cv2
+import numpy as np
+from ultralytics import YOLO
+
+# Load your custom YOLO model
+model = YOLO('runs/detect/train/weights/best.pt')
+
+# Open webcam
+cap = cv2.VideoCapture(0)
+if not cap.isOpened():
+    print("Error: Could not open webcam.")
+    exit()
+
+try:
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Error: Failed to capture frame.")
+            break
+
+        # Perform inference
+        results = model(frame)
+
+        # Process results
+        current_detections = []
+        for result in results:
+            if result.boxes is not None:
+                class_indices = result.boxes.cls.cpu().numpy().astype(int)
+                
+                for cls_idx in class_indices:
+                    try:
+                        object_name = model.names[cls_idx]
+                    except IndexError:
+                        object_name = f"Unknown Class {cls_idx}"
+                    current_detections.append(object_name)
+
+        # Print unique detected objects to console
+        unique_detections = list(set(current_detections))
+        if unique_detections:
+            print("Detected Objects:", ", ".join(unique_detections))
+
+        # Exit on 'q' press
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+except Exception as e:
+    print(f"An error occurred: {e}")
+
+finally:
+    cap.release()
+    cv2.destroyAllWindows()
